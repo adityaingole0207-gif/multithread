@@ -1,0 +1,12 @@
+.pytest_cache/
+__pycache__/
+*.pyc
+.git/
+build/
+include/
+src/
+web_dashboard/
+*.bat
+*.ps1
+CMakeLists.txt
+server.js

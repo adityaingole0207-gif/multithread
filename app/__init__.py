@@ -1,0 +1,5 @@
+"""App package exports."""
+
+from app.routes import create_app
+
+__all__ = ["create_app"]

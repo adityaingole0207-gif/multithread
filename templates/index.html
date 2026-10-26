@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multithreaded Task Execution Engine with Resource Monitor</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <header>
+    <div class="logo-group">
+      <div class="logo-badge">OS</div>
+      <div>
+        <div class="brand-title">Multithreaded Task Execution Engine</div>
+        <div class="brand-subtitle">Real Concurrency, Dynamic Scheduling & Resource Monitoring</div>
+      </div>
+    </div>
+
+    <nav>
+      <a href="/" class="nav-link active">Live Telemetry</a>
+      <a href="/benchmark" class="nav-link">Benchmark & Sync Demos</a>
+      <div class="system-status">
+        <div class="status-dot"></div>
+        <span id="sse-status">Connecting SSE...</span>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <!-- TOP METRICS GRID -->
+    <section class="metrics-grid">
+      <div class="metric-card">
+        <div class="metric-title">CPU Utilization <span style="color:var(--accent-cyan)">Process</span></div>
+        <div class="metric-value" id="val-cpu">0.0%</div>
+        <div class="metric-sub" id="sub-cpu">Active cores working</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-title">Memory Footprint <span style="color:var(--accent-indigo)">RAM</span></div>
+        <div class="metric-value" id="val-mem">0.0 MB</div>
+        <div class="metric-sub" id="sub-mem">0.0% of system RAM</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-title">Worker Threads <span style="color:var(--accent-purple)">Pool</span></div>
+        <div class="metric-value" id="val-workers">0 / 0</div>
+        <div class="metric-sub" id="sub-workers">Active / Idle</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-title">Ready Queue <span style="color:var(--accent-amber)">Backlog</span></div>
+        <div class="metric-value" id="val-queue">0</div>
+        <div class="metric-sub" id="sub-policy">Policy: PRIORITY</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-title">Engine Throughput <span style="color:var(--accent-emerald)">Rate</span></div>
+        <div class="metric-value" id="val-throughput">0.0 t/s</div>
+        <div class="metric-sub" id="sub-completed">Completed: 0 tasks</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-title">Avg Latencies <span style="color:var(--text-secondary)">Wait / Turnaround</span></div>
+        <div class="metric-value" id="val-latency">0.00s / 0.00s</div>
+        <div class="metric-sub">Average Wait / Turnaround</div>
+      </div>
+    </section>
+
+    <!-- INTERACTIVE CONTROL PANEL -->
+    <section class="controls-card">
+      <div class="control-group">
+        <span class="control-label">Workload Type</span>
+        <select id="select-task-type">
+          <option value="cpu_matrix">CPU: Matrix Multiply (O(N^3))</option>
+          <option value="cpu_prime">CPU: Prime Calculation</option>
+          <option value="cpu_hash">CPU: SHA-256 Hashing</option>
+          <option value="io_network">I/O: Network Latency</option>
+          <option value="io_disk">I/O: Disk Seek Delay</option>
+          <option value="mixed_word">Mixed: Word Count Parser</option>
+          <option value="mixed_image">Mixed: 2D Convolution Blur</option>
+          <option value="round_robin_slice">Time-Sliced: Round Robin Quantum</option>
+          <option value="semaphore_db">Resource: Semaphore DB Query</option>
+          <option value="faulty">Faulty: Simulated Retry On Failure</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <span class="control-label">Batch Size</span>
+        <select id="select-batch-size">
+          <option value="1">1 Task</option>
+          <option value="4" selected>4 Tasks</option>
+          <option value="10">10 Tasks</option>
+          <option value="20">20 Tasks</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <span class="control-label">Priority</span>
+        <select id="select-priority">
+          <option value="1">1 - Low</option>
+          <option value="2" selected>2 - Normal</option>
+          <option value="3">3 - High</option>
+          <option value="4">4 - Critical</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <span class="control-label">Policy</span>
+        <select id="select-policy">
+          <option value="PRIORITY">Priority (with Aging)</option>
+          <option value="FCFS">FCFS (First-Come First-Served)</option>
+          <option value="SJF">SJF (Shortest Job First)</option>
+          <option value="ROUND_ROBIN">Round Robin</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <button class="btn-primary" id="btn-submit">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          Submit Tasks
+        </button>
+        <button class="btn-warning" id="btn-pause">Pause</button>
+        <button class="btn-danger" id="btn-reset">Reset</button>
+      </div>
+    </section>
+
+    <!-- LIVE CHARTS -->
+    <section class="charts-grid">
+      <div class="chart-card">
+        <div class="card-header">
+          <span>Real-time CPU Utilization & Memory</span>
+          <span style="font-size:0.75rem; color:var(--text-muted)">Sampling: 1 Hz</span>
+        </div>
+        <div class="chart-container">
+          <canvas id="chart-cpu-mem"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <div class="card-header">
+          <span>Throughput (Tasks/sec) & Queue Length</span>
+          <span style="font-size:0.75rem; color:var(--text-muted)">Live Dispatch Rate</span>
+        </div>
+        <div class="chart-container">
+          <canvas id="chart-throughput-queue"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- WORKERS & CONCURRENCY CONTROLS -->
+    <section class="split-grid">
+      <!-- Worker Thread Pool Panel -->
+      <div class="panel-card">
+        <div class="card-header">
+          <span>Active Worker Thread Pool</span>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <label style="font-size:0.75rem; color:var(--text-secondary); display:flex; align-items:center; gap:0.3rem;">
+              <input type="checkbox" id="check-dynamic" checked> Dynamic Autoscaling
+            </label>
+            <input type="number" id="input-workers" min="1" max="16" value="4" style="width:55px; padding:0.25rem 0.4rem;">
+            <button id="btn-set-workers" style="padding:0.25rem 0.6rem; font-size:0.75rem;">Set</button>
+          </div>
+        </div>
+        <div class="workers-container" id="workers-list">
+          <!-- Dynamically populated worker cards -->
+        </div>
+
+        <div style="margin-top:1.25rem;">
+          <div class="card-header" style="margin-bottom:0.25rem;">
+            <span>Worker Execution Timeline (Gantt Schedule)</span>
+            <span style="font-size:0.72rem; color:var(--text-muted)">Recent thread execution windows</span>
+          </div>
+          <div class="gantt-chart" id="gantt-container">
+            <!-- Dynamically populated Gantt bars -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Semaphore-Guarded Resource Pool -->
+      <div class="panel-card">
+        <div class="card-header">
+          <span>Shared Resource Pool (Semaphore)</span>
+          <span class="badge badge-busy">Capacity: 3</span>
+        </div>
+        <p style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:1rem;">
+          Guarded by a Counting Semaphore. Demonstrates bounded concurrent access to finite database connections.
+        </p>
+
+        <div style="background:rgba(0,0,0,0.25); border-radius:8px; padding:1rem; border:1px solid var(--border-color); display:flex; flex-direction:column; gap:0.75rem;">
+          <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+            <span>Available Permits:</span>
+            <strong id="sem-available" style="color:var(--accent-emerald);">3 / 3</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+            <span>Allocated Slots:</span>
+            <strong id="sem-allocated" style="color:var(--accent-indigo);">0</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
+            <span>Blocked / Waiting Threads:</span>
+            <strong id="sem-waiting" style="color:var(--accent-amber);">0</strong>
+          </div>
+          <div id="sem-allocations-list" style="margin-top:0.5rem; font-size:0.72rem; color:var(--text-muted); display:flex; flex-direction:column; gap:0.25rem;">
+            <!-- Active resource slot holders -->
+          </div>
+        </div>
+
+        <div style="margin-top:1.25rem;">
+          <div class="card-header">
+            <span>Live Kernel Event Log</span>
+          </div>
+          <div class="event-log-container" id="event-log">
+            <!-- Event entries -->
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- LIVE TASK TABLE -->
+    <section class="table-card">
+      <div class="card-header">
+        <span>Task Execution Table</span>
+        <button id="btn-refresh-tasks" style="padding:0.25rem 0.6rem; font-size:0.75rem;">Refresh Table</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Task ID</th>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Priority</th>
+            <th>State</th>
+            <th>Worker</th>
+            <th>Wait Time</th>
+            <th>Exec Time</th>
+            <th>Turnaround</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="task-table-body">
+          <!-- Populated dynamically -->
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

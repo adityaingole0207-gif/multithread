@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OS Benchmarks & Synchronization Demos</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+  <header>
+    <div class="logo-group">
+      <div class="logo-badge">OS</div>
+      <div>
+        <div class="brand-title">Multithreaded Task Execution Engine</div>
+        <div class="brand-subtitle">Benchmark Analysis, Synchronization & OS Concurrency Demos</div>
+      </div>
+    </div>
+
+    <nav>
+      <a href="/" class="nav-link">Live Telemetry</a>
+      <a href="/benchmark" class="nav-link active">Benchmark & Sync Demos</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- SECTION 1: BENCHMARK SUITE -->
+    <section class="panel-card">
+      <div class="card-header">
+        <div>
+          <h2 style="font-size:1.1rem; color:var(--text-primary);">Multithreading Performance & Speedup Benchmark</h2>
+          <p style="font-size:0.75rem; color:var(--text-muted); margin-top:0.2rem;">
+            Proves the efficiency benefits of thread pooling, dynamic scaling, and contrasts against Python's GIL.
+          </p>
+        </div>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <a href="/api/benchmarks/export" class="btn-primary" style="text-decoration:none; padding:0.45rem 0.8rem; font-size:0.8rem;">Export CSV</a>
+        </div>
+      </div>
+
+      <div class="controls-card" style="margin-top:1rem; background:rgba(0,0,0,0.25);">
+        <div class="control-group">
+          <span class="control-label">Workload</span>
+          <select id="bench-workload">
+            <option value="io">I/O-Bound (Simulated Network Latency)</option>
+            <option value="cpu">CPU-Bound (Matrix Dot Product & GIL Contrast)</option>
+            <option value="mixed">Mixed (Prime Search + Word Parsing)</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <span class="control-label">Task Count</span>
+          <select id="bench-tasks">
+            <option value="8">8 Tasks</option>
+            <option value="12" selected>12 Tasks</option>
+            <option value="16">16 Tasks</option>
+          </select>
+        </div>
+
+        <div class="control-group">
+          <button class="btn-primary" id="btn-run-benchmark">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Execute Benchmark
+          </button>
+          <span id="bench-spinner" style="font-size:0.8rem; color:var(--accent-cyan); display:none;">Running benchmark suite...</span>
+        </div>
+      </div>
+
+      <!-- Benchmark Results Table -->
+      <div class="table-card" style="margin-top:1.25rem;">
+        <table>
+          <thead>
+            <tr>
+              <th>Architecture / Configuration</th>
+              <th>Workload</th>
+              <th>Tasks</th>
+              <th>Worker Allocation</th>
+              <th>Wall Time (s)</th>
+              <th>Speedup</th>
+              <th>Throughput</th>
+              <th>Avg Turnaround</th>
+              <th>Avg CPU %</th>
+            </tr>
+          </thead>
+          <tbody id="bench-table-body">
+            <tr>
+              <td colspan="9" style="text-align:center; color:var(--text-muted); padding:2rem;">
+                Click "Execute Benchmark" above to run sequential vs multi-threaded vs dynamic vs multiprocessing workloads.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Benchmark Charts -->
+      <div class="charts-grid" style="margin-top:1.25rem;">
+        <div class="chart-card">
+          <div class="card-header">
+            <span>Execution Duration (Lower is Better)</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-bench-time"></canvas>
+          </div>
+        </div>
+
+        <div class="chart-card">
+          <div class="card-header">
+            <span>Speedup Multiplier vs 1 Thread (Higher is Better)</span>
+          </div>
+          <div class="chart-container">
+            <canvas id="chart-bench-speedup"></canvas>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: SYNCHRONIZATION DEMOS -->
+    <section class="split-grid">
+      <!-- Race Condition Demo Card -->
+      <div class="panel-card">
+        <div class="card-header">
+          <span>Race Condition & Critical Section Demo</span>
+          <span class="badge badge-busy">Mutual Exclusion</span>
+        </div>
+        <p style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:1rem;">
+          Demonstrates lost updates when multiple threads access a shared memory counter without a Mutex vs with Mutex lock.
+        </p>
+
+        <div class="controls-card" style="background:rgba(0,0,0,0.25); margin-bottom:1rem; padding:0.75rem;">
+          <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.82rem; cursor:pointer;">
+            <input type="checkbox" id="check-use-lock">
+            <strong>Enable Mutex Lock (threading.Lock)</strong>
+          </label>
+          <button class="btn-primary" id="btn-run-race" style="padding:0.4rem 0.8rem; font-size:0.8rem;">Run Race Test</button>
+        </div>
+
+        <div id="race-results" style="background:rgba(18,24,38,0.8); border:1px solid var(--border-color); border-radius:8px; padding:1rem; display:flex; flex-direction:column; gap:0.5rem; font-size:0.82rem;">
+          <div style="display:flex; justify-content:space-between;">
+            <span>Mode:</span>
+            <strong id="race-mode" style="color:var(--text-secondary);">Not Executed Yet</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span>Expected Sum (10 Threads × 400 Incr):</span>
+            <strong id="race-expected">4,000</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span>Actual Sum Recorded:</span>
+            <strong id="race-actual" style="color:var(--accent-cyan);">-</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span>Lost Updates Count:</span>
+            <strong id="race-lost" style="color:var(--accent-rose);">-</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span>Execution Duration:</span>
+            <strong id="race-duration">-</strong>
+          </div>
+          <p id="race-explanation" style="font-size:0.75rem; color:var(--text-muted); margin-top:0.5rem; border-top:1px solid rgba(255,255,255,0.06); padding-top:0.5rem;">
+            Click "Run Race Test" to execute 10 concurrent worker threads updating shared state.
+          </p>
+        </div>
+      </div>
+
+      <!-- Deadlock Avoidance Demo Card -->
+      <div class="panel-card">
+        <div class="card-header">
+          <span>Deadlock & Avoidance Demo</span>
+          <span class="badge badge-busy">Coffman Conditions</span>
+        </div>
+        <p style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:1rem;">
+          Demonstrates deadlock via circular wait (Thread 1 holds A wants B, Thread 2 holds B wants A) vs Avoidance via Lock Hierarchy.
+        </p>
+
+        <div class="controls-card" style="background:rgba(0,0,0,0.25); margin-bottom:1rem; padding:0.75rem;">
+          <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.82rem; cursor:pointer;">
+            <input type="checkbox" id="check-avoid-deadlock">
+            <strong>Avoid Deadlock (Lock Ordering Protocol)</strong>
+          </label>
+          <button class="btn-primary" id="btn-run-deadlock" style="padding:0.4rem 0.8rem; font-size:0.8rem;">Run Deadlock Test</button>
+        </div>
+
+        <div id="deadlock-results" style="background:rgba(18,24,38,0.8); border:1px solid var(--border-color); border-radius:8px; padding:1rem; display:flex; flex-direction:column; gap:0.5rem; font-size:0.82rem;">
+          <div style="display:flex; justify-content:space-between;">
+            <span>Result Status:</span>
+            <strong id="dl-status" style="color:var(--text-secondary);">Not Executed Yet</strong>
+          </div>
+          <div style="margin-top:0.5rem;">
+            <span style="font-size:0.75rem; color:var(--text-muted);">Thread Synchronization Trace:</span>
+            <div id="dl-logs" style="margin-top:0.35rem; max-height:120px; overflow-y:auto; font-family:'Consolas', monospace; font-size:0.72rem; display:flex; flex-direction:column; gap:0.2rem; color:var(--text-secondary);">
+              <span>- Waiting to start test -</span>
+            </div>
+          </div>
+          <p id="dl-explanation" style="font-size:0.75rem; color:var(--text-muted); margin-top:0.5rem; border-top:1px solid rgba(255,255,255,0.06); padding-top:0.5rem;">
+            Toggle "Avoid Deadlock" to observe how global lock ordering prevents circular dependencies.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: THEORETICAL FOUNDATION -->
+    <section class="panel-card" style="margin-bottom:2rem;">
+      <div class="card-header">
+        <span>Operating Systems Theoretical Insights & Amdahl's Law</span>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(320px, 1fr)); gap:1.25rem; font-size:0.82rem; color:var(--text-secondary); margin-top:0.75rem;">
+        <div style="background:rgba(0,0,0,0.2); padding:1rem; border-radius:8px; border:1px solid var(--border-color);">
+          <strong style="color:var(--accent-cyan); display:block; margin-bottom:0.4rem;">Amdahl's Law Formula</strong>
+          <p>Speedup \(S(N) = \frac{1}{(1-P) + \frac{P}{N}}\)</p>
+          <p style="margin-top:0.4rem; font-size:0.76rem; color:var(--text-muted);">
+            \(P\) is the parallel fraction and \(N\) is the thread count. If 20% of work is sequential \((1-P = 0.2)\), the maximum theoretical speedup is strictly capped at 5x regardless of how many threads or CPU cores are added.
+          </p>
+        </div>
+
+        <div style="background:rgba(0,0,0,0.2); padding:1rem; border-radius:8px; border:1px solid var(--border-color);">
+          <strong style="color:var(--accent-indigo); display:block; margin-bottom:0.4rem;">I/O-Bound Efficiency</strong>
+          <p>Threads release CPU during I/O operations.</p>
+          <p style="margin-top:0.4rem; font-size:0.76rem; color:var(--text-muted);">
+            When a thread calls sleep, socket read, or disk seek, the OS scheduler moves it from RUNNING to BLOCKED. Another READY thread can immediately utilize the core, achieving near-linear multi-threaded speedups.
+          </p>
+        </div>
+
+        <div style="background:rgba(0,0,0,0.2); padding:1rem; border-radius:8px; border:1px solid var(--border-color);">
+          <strong style="color:var(--accent-purple); display:block; margin-bottom:0.4rem;">CPython Global Interpreter Lock (GIL)</strong>
+          <p>Threads share memory; Processes share no memory.</p>
+          <p style="margin-top:0.4rem; font-size:0.76rem; color:var(--text-muted);">
+            CPython's GIL restricts pure bytecode execution to a single OS thread at a time. True multi-core CPU scaling for Python requires OS Multiprocessing, which spawns distinct processes each possessing an independent interpreter and memory space.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/static/js/benchmark.js"></script>
+</body>
+</html>
