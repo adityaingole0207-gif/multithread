@@ -62,7 +62,7 @@ class ResourceMonitor:
     def __init__(self, pool: ThreadPool, history_len: int = 60, max_events: int = 200, max_gantt: int = 150):
         self.pool = pool
         self.process = psutil.Process(os.getpid())
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
 
         # Telemetry history buffers
         self.history_len = history_len

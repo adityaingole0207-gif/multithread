@@ -46,7 +46,7 @@ class WorkerThread(threading.Thread):
                 if idle_duration > self.pool.idle_timeout and self.pool.scheduler.size() == 0:
                     with self.pool._lock:
                         if len(self.pool.workers) > self.pool.min_workers:
-                            self.pool.unregister_worker(self)
+                            self.pool._unregister_worker_locked(self)
                             self.is_running = False
                             self.pool.log_event("SCALING", f"{self.name} scaled down (idle for {idle_duration:.1f}s)")
                             break
@@ -136,7 +136,7 @@ class ThreadPool:
         self.idle_timeout = idle_timeout
         self.is_shutdown = False
 
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self.pause_event = threading.Event()
         self.pause_event.set()  # Initially unpaused
 
@@ -169,8 +169,12 @@ class ThreadPool:
     def unregister_worker(self, worker: WorkerThread) -> None:
         """Removes a worker thread from active pool."""
         with self._lock:
-            if worker in self.workers:
-                self.workers.remove(worker)
+            self._unregister_worker_locked(worker)
+
+    def _unregister_worker_locked(self, worker: WorkerThread) -> None:
+        """Removes a worker thread from active pool (caller holds self._lock)."""
+        if worker in self.workers:
+            self.workers.remove(worker)
 
     def submit(self, task: Task) -> str:
         """

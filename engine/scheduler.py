@@ -31,7 +31,7 @@ class Scheduler:
     """
 
     def __init__(self, policy: str = SchedulingPolicy.PRIORITY, aging_interval: float = 2.0, aging_factor: float = 1.0, time_quantum: float = 0.2):
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._not_empty = threading.Condition(self._lock)
         self.policy = policy
         self.aging_interval = aging_interval
