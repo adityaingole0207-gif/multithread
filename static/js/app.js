@@ -160,24 +160,23 @@ function initSSE() {
 function updateDashboard(data) {
   // Top Metrics
   document.getElementById('val-cpu').textContent = `${data.cpu_percent}%`;
-  document.getElementById('val-mem').textContent = `${data.memory_mb} MB`;
-  document.getElementById('sub-mem').textContent = `${data.memory_percent}% of system RAM`;
+  document.getElementById('val-mem').textContent = `RAM: ${data.memory_mb} MB (${data.memory_percent}%)`;
   document.getElementById('val-workers').textContent = `${data.active_workers} / ${data.total_workers}`;
-  document.getElementById('sub-workers').textContent = `${data.idle_workers} idle | ${data.os_threads} OS threads`;
+  document.getElementById('sub-workers').textContent = `${data.active_workers} busy | ${data.idle_workers} idle tellers`;
   document.getElementById('val-queue').textContent = data.queue_length;
-  document.getElementById('sub-policy').textContent = `Policy: ${data.policy}`;
-  document.getElementById('val-throughput').textContent = `${data.tasks_per_second} t/s`;
-  document.getElementById('sub-completed').textContent = `Completed: ${data.completed_count} | Failed: ${data.failed_count}`;
+  document.getElementById('sub-policy').textContent = `Dispatch: ${data.policy}`;
+  document.getElementById('val-throughput').textContent = `${data.tasks_per_second} TPS`;
+  document.getElementById('sub-completed').textContent = `Settled: ${data.completed_count} | Failed: ${data.failed_count}`;
   document.getElementById('val-latency').textContent = `${data.avg_wait_time}s / ${data.avg_turnaround_time}s`;
 
   // Pause button state sync
   isEnginePaused = data.is_paused;
   const pauseBtn = document.getElementById('btn-pause');
   if (isEnginePaused) {
-    pauseBtn.textContent = 'Resume';
+    pauseBtn.textContent = 'Resume Engine';
     pauseBtn.className = 'btn-primary';
   } else {
-    pauseBtn.textContent = 'Pause';
+    pauseBtn.textContent = 'Freeze Engine';
     pauseBtn.className = 'btn-warning';
   }
 
@@ -194,10 +193,10 @@ function updateDashboard(data) {
     chartThroughputQueue.update('none');
   }
 
-  // Workers List
+  // Workers / Tellers List
   renderWorkers(data.workers || []);
 
-  // Resource Pool Status
+  // SWIFT / Resource Pool Status
   if (data.resource_pool) {
     renderResourcePool(data.resource_pool);
   }
@@ -208,9 +207,14 @@ function updateDashboard(data) {
   // Gantt Chart
   renderGantt(data.gantt || []);
 
-  // Banking Accounts Ledger
+  // Banking Accounts Ledger & Vault Reserve
   if (data.banking_accounts) {
     renderBankingAccounts(data.banking_accounts);
+    const vaultTotal = data.banking_accounts.reduce((s, a) => s + (a.balance || 0), 0);
+    const vaultEl = document.getElementById('val-total-vault');
+    if (vaultEl) {
+      vaultEl.textContent = '$' + vaultTotal.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
   }
 }
 
@@ -218,17 +222,17 @@ function renderBankingAccounts(accounts) {
   const container = document.getElementById('banking-accounts-grid');
   if (!container) return;
   container.innerHTML = accounts.map(acc => `
-    <div class="metric-card" style="padding:0.85rem; border-color:rgba(16,185,129,0.25);">
-      <div class="metric-title">
-        <span style="color:var(--accent-emerald); font-weight:700;">${acc.account_id}</span>
-        <span style="font-size:0.7rem; color:var(--text-secondary);">${acc.holder_name}</span>
+    <div class="account-card">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <span style="color:var(--accent-emerald); font-weight:800; font-size:0.88rem;">${acc.account_id}</span>
+        <span style="font-size:0.75rem; color:var(--text-secondary);">${acc.holder_name}</span>
       </div>
-      <div class="metric-value" style="font-size:1.3rem; color:var(--text-primary); margin:0.35rem 0;">
+      <div style="font-size:1.45rem; font-weight:800; color:var(--text-primary); margin:0.4rem 0;">
         $${acc.balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
       </div>
-      <div class="metric-sub" style="display:flex; justify-content:space-between; font-size:0.7rem;">
-        <span>Tx Count: ${acc.transaction_count}</span>
-        <span style="color:var(--accent-cyan); font-weight:600;">Mutex Guarded</span>
+      <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.72rem; color:var(--text-muted); border-top:1px solid rgba(255,255,255,0.06); padding-top:0.35rem;">
+        <span>Settled Tx: <strong style="color:var(--text-primary);">${acc.transaction_count}</strong></span>
+        <span style="color:var(--accent-cyan); font-weight:600;">🔒 Mutex Guarded</span>
       </div>
     </div>
   `).join('');
@@ -240,14 +244,21 @@ function renderWorkers(workers) {
     const isBusy = w.is_busy;
     const taskInfo = w.current_task 
       ? `[${w.current_task.task_id}] ${w.current_task.name}` 
-      : 'Waiting for task...';
+      : 'Waiting for financial transactions...';
     const badgeClass = isBusy ? 'badge-busy' : 'badge-idle';
-    const statusText = isBusy ? 'BUSY' : 'IDLE';
+    const statusText = isBusy ? 'BUSY (SETTLING)' : 'IDLE (READY)';
 
     return `
       <div class="worker-pill ${isBusy ? 'busy' : ''}">
         <div class="worker-pill-top">
-          <span>${w.name}</span>
+          <span>Teller-${w.id}</span>
+          <span class="badge ${badgeClass}">${statusText}</span>
+        </div>
+        <div class="worker-task-desc" title="${taskInfo}">${taskInfo}</div>
+      </div>
+    `;
+  }).join('');
+}
           <span class="badge ${badgeClass}">${statusText}</span>
         </div>
         <div class="worker-task-desc" title="${taskInfo}">${taskInfo}</div>

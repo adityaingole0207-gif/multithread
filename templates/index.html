@@ -3,183 +3,239 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Multithreaded Task Execution Engine with Resource Monitor</title>
+  <title>FinCore OS - Multithreaded Core Banking & Transaction Engine</title>
   <link rel="stylesheet" href="/static/css/style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    .bank-brand-badge {
+      background: linear-gradient(135deg, #10b981, #06b6d4);
+      color: #0b0f19;
+      font-weight: 900;
+      font-size: 1.15rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 8px;
+      letter-spacing: 0.5px;
+    }
+    .account-card {
+      background: rgba(18, 24, 38, 0.85);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: 10px;
+      padding: 1rem;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .account-card:hover {
+      border-color: rgba(16, 185, 129, 0.6);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(16, 185, 129, 0.15);
+    }
+    .account-card.tx-pulse {
+      animation: accountPulse 0.8s ease-out;
+    }
+    @keyframes accountPulse {
+      0% { border-color: #10b981; box-shadow: 0 0 16px rgba(16, 185, 129, 0.6); }
+      100% { border-color: rgba(16, 185, 129, 0.2); box-shadow: none; }
+    }
+    .tag-swift {
+      background: rgba(99, 102, 241, 0.2);
+      color: #818cf8;
+      border: 1px solid rgba(99, 102, 241, 0.4);
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      font-size: 0.68rem;
+      font-weight: 700;
+    }
+  </style>
 </head>
 <body>
 
   <header>
     <div class="logo-group">
-      <div class="logo-badge">OS</div>
+      <div class="bank-brand-badge">🏦 FinCore</div>
       <div>
-        <div class="brand-title">Multithreaded Task Execution Engine</div>
-        <div class="brand-subtitle">Real Concurrency, Dynamic Scheduling & Resource Monitoring</div>
+        <div class="brand-title">FinCore: Core Banking &amp; Financial Settlement Engine</div>
+        <div class="brand-subtitle">Multithreaded Task Execution Engine | Real-Time Atomic Ledger &amp; SWIFT Gateway</div>
       </div>
     </div>
 
     <nav>
-      <a href="/" class="nav-link active">Live Telemetry</a>
-      <a href="/benchmark" class="nav-link">Benchmark & Sync Demos</a>
+      <a href="/" class="nav-link active">Core Banking Terminal</a>
+      <a href="/benchmark" class="nav-link">Security, Race Demos &amp; Speedup</a>
       <div class="system-status">
         <div class="status-dot"></div>
-        <span id="sse-status">Connecting SSE...</span>
+        <span id="sse-status">Connecting Banking Stream...</span>
       </div>
     </nav>
   </header>
 
   <main>
-    <!-- TOP METRICS GRID -->
+    <!-- TOP METRICS GRID: BANKING OPERATIONS -->
     <section class="metrics-grid">
       <div class="metric-card">
-        <div class="metric-title">CPU Utilization <span style="color:var(--accent-cyan)">Process</span></div>
-        <div class="metric-value" id="val-cpu">0.0%</div>
-        <div class="metric-sub" id="sub-cpu">Active cores working</div>
-      </div>
-
-      <div class="metric-card">
-        <div class="metric-title">Memory Footprint <span style="color:var(--accent-indigo)">RAM</span></div>
-        <div class="metric-value" id="val-mem">0.0 MB</div>
-        <div class="metric-sub" id="sub-mem">0.0% of system RAM</div>
-      </div>
-
-      <div class="metric-card">
-        <div class="metric-title">Worker Threads <span style="color:var(--accent-purple)">Pool</span></div>
-        <div class="metric-value" id="val-workers">0 / 0</div>
-        <div class="metric-sub" id="sub-workers">Active / Idle</div>
-      </div>
-
-      <div class="metric-card">
-        <div class="metric-title">Ready Queue <span style="color:var(--accent-amber)">Backlog</span></div>
-        <div class="metric-value" id="val-queue">0</div>
-        <div class="metric-sub" id="sub-policy">Policy: PRIORITY</div>
-      </div>
-
-      <div class="metric-card">
-        <div class="metric-title">Engine Throughput <span style="color:var(--accent-emerald)">Rate</span></div>
+        <div class="metric-title">Transaction Rate <span style="color:var(--accent-emerald)">TPS</span></div>
         <div class="metric-value" id="val-throughput">0.0 t/s</div>
-        <div class="metric-sub" id="sub-completed">Completed: 0 tasks</div>
+        <div class="metric-sub" id="sub-completed">Settled: 0 transactions</div>
       </div>
 
       <div class="metric-card">
-        <div class="metric-title">Avg Latencies <span style="color:var(--text-secondary)">Wait / Turnaround</span></div>
+        <div class="metric-title">Active Teller Threads <span style="color:var(--accent-indigo)">Worker Pool</span></div>
+        <div class="metric-value" id="val-workers">0 / 4</div>
+        <div class="metric-sub" id="sub-workers">0 busy | 4 idle tellers</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-title">Pending Settlement Queue <span style="color:var(--accent-amber)">Backlog</span></div>
+        <div class="metric-value" id="val-queue">0</div>
+        <div class="metric-sub" id="sub-policy">Dispatch: Priority (Aging)</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-title">Total Vault Reserves <span style="color:var(--accent-cyan)">Liquidity</span></div>
+        <div class="metric-value" id="val-total-vault">$146,600.00</div>
+        <div class="metric-sub">Across 6 Master Accounts</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-title">Avg Settlement Latency <span style="color:var(--text-secondary)">Wait / Turnaround</span></div>
         <div class="metric-value" id="val-latency">0.00s / 0.00s</div>
-        <div class="metric-sub">Average Wait / Turnaround</div>
+        <div class="metric-sub">Average Queue &amp; Processing Time</div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-title">Core Engine CPU <span style="color:var(--accent-purple)">Server Load</span></div>
+        <div class="metric-value" id="val-cpu">0.0%</div>
+        <div class="metric-sub" id="val-mem">RAM: 0.0 MB</div>
       </div>
     </section>
 
-    <!-- INTERACTIVE CONTROL PANEL -->
-    <section class="controls-card">
+    <!-- LIVE MULTI-ACCOUNT BANKING LEDGER (CENTER STAGE) -->
+    <section class="panel-card" style="border: 1px solid rgba(16, 185, 129, 0.35);">
+      <div class="card-header">
+        <div>
+          <span style="color:var(--accent-emerald); font-weight:800; font-size:1.05rem;">🏦 Central Bank Master Ledger &amp; Customer Accounts</span>
+          <span style="font-size:0.75rem; color:var(--text-secondary); margin-left:0.6rem;">
+            Atomic Debit/Credit guaranteed via Account Mutexes &amp; Global ID Lock Ordering
+          </span>
+        </div>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <button id="btn-reset-ledger" class="btn-warning" style="padding:0.3rem 0.75rem; font-size:0.78rem;">Reset Account Balances</button>
+        </div>
+      </div>
+
+      <!-- Account cards rendered dynamically -->
+      <div class="metrics-grid" id="banking-accounts-grid" style="margin-top:0.85rem; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));">
+        <!-- Live accounts -->
+      </div>
+    </section>
+
+    <!-- BANKING DISPATCH CONTROLS -->
+    <section class="controls-card" style="border: 1px solid var(--border-highlight);">
       <div class="control-group">
-        <span class="control-label">Workload Type</span>
-        <select id="select-task-type">
-          <optgroup label="🏦 Core Banking System (Real-World Application)">
-            <option value="bank_transfer" selected>🏦 Bank: P2P Fund Transfer (Deadlock-Free Lock Ordering)</option>
-            <option value="bank_atm">🏧 Bank: Concurrent ATM Withdrawal (Mutex Protection)</option>
-            <option value="bank_swift">🌐 Bank: SWIFT Settlement Line (Semaphore Pool: Cap 3)</option>
-            <option value="bank_fraud">🛡️ Bank: AI Transaction Risk Scoring (CPU Intensive)</option>
-            <option value="bank_payroll">💼 Bank: Corporate Payroll Disbursement (Round Robin)</option>
+        <span class="control-label">Financial Transaction</span>
+        <select id="select-task-type" style="min-width: 280px;">
+          <optgroup label="🏦 Core Financial Operations">
+            <option value="bank_transfer" selected>💸 P2P Transfer (Alice ↔ Bob with Lock Ordering)</option>
+            <option value="bank_atm">🏧 ATM Cash Withdrawal (Atomic Mutex Debit)</option>
+            <option value="bank_swift">🌐 High-Value SWIFT Wire (Semaphore Pipeline: Cap 3)</option>
+            <option value="bank_fraud">🛡️ AI Transaction Fraud Risk Scoring (CPU Core Intensive)</option>
+            <option value="bank_payroll">💼 Enterprise Corporate Payroll (Round-Robin Time Slices)</option>
           </optgroup>
-          <optgroup label="⚙️ Standard Synthetic OS Workloads">
-            <option value="cpu_matrix">CPU: Matrix Multiply (O(N^3))</option>
-            <option value="cpu_prime">CPU: Prime Calculation</option>
-            <option value="cpu_hash">CPU: SHA-256 Hashing</option>
-            <option value="io_network">I/O: Network Latency</option>
-            <option value="io_disk">I/O: Disk Seek Delay</option>
-            <option value="mixed_word">Mixed: Word Count Parser</option>
-            <option value="mixed_image">Mixed: 2D Convolution Blur</option>
-            <option value="round_robin_slice">Time-Sliced: Round Robin Quantum</option>
-            <option value="semaphore_db">Resource: Semaphore DB Query</option>
-            <option value="faulty">Faulty: Simulated Retry On Failure</option>
+          <optgroup label="⚙️ Supplementary Synthetic Benchmarks">
+            <option value="cpu_matrix">CPU: Matrix Dot Product (O(N^3))</option>
+            <option value="cpu_hash">CPU: SHA-256 Ledger Block Hashing</option>
+            <option value="io_network">I/O: Inter-Bank Network Delay</option>
+            <option value="io_disk">I/O: Disk Audit Log Flush</option>
           </optgroup>
         </select>
       </div>
 
       <div class="control-group">
-        <span class="control-label">Batch Size</span>
+        <span class="control-label">Transaction Batch</span>
         <select id="select-batch-size">
-          <option value="1">1 Task</option>
-          <option value="4" selected>4 Tasks</option>
-          <option value="10">10 Tasks</option>
-          <option value="20">20 Tasks</option>
+          <option value="1">1 Transaction</option>
+          <option value="4" selected>4 Transactions</option>
+          <option value="8">8 Transactions</option>
+          <option value="16">16 Transactions</option>
         </select>
       </div>
 
       <div class="control-group">
-        <span class="control-label">Priority</span>
+        <span class="control-label">Urgency Tier</span>
         <select id="select-priority">
-          <option value="1">1 - Low</option>
-          <option value="2" selected>2 - Normal</option>
-          <option value="3">3 - High</option>
-          <option value="4">4 - Critical</option>
+          <option value="1">Tier 1: Low (Batch Statements)</option>
+          <option value="2" selected>Tier 2: Normal (ATM / Retail Transfer)</option>
+          <option value="3">Tier 3: High (Merchant Settlement)</option>
+          <option value="4">Tier 4: Critical (VIP SWIFT Wire / Fraud Alert)</option>
         </select>
       </div>
 
       <div class="control-group">
-        <span class="control-label">Policy</span>
+        <span class="control-label">Dispatch Policy</span>
         <select id="select-policy">
-          <option value="PRIORITY">Priority (with Aging)</option>
+          <option value="PRIORITY">Priority (with Starvation Aging)</option>
           <option value="FCFS">FCFS (First-Come First-Served)</option>
-          <option value="SJF">SJF (Shortest Job First)</option>
-          <option value="ROUND_ROBIN">Round Robin</option>
+          <option value="SJF">SJF (Quick Transactions First)</option>
+          <option value="ROUND_ROBIN">Round Robin (Time-Sliced)</option>
         </select>
       </div>
 
       <div class="control-group">
-        <button class="btn-primary" id="btn-submit">
+        <button class="btn-primary" id="btn-submit" style="background:linear-gradient(135deg, #10b981, #059669);">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          Submit Tasks
+          Dispatch to Tellers
         </button>
-        <button class="btn-warning" id="btn-pause">Pause</button>
-        <button class="btn-danger" id="btn-reset">Reset</button>
+        <button class="btn-warning" id="btn-pause">Freeze Engine</button>
+        <button class="btn-danger" id="btn-reset">Reset Engine</button>
       </div>
     </section>
 
-    <!-- LIVE CHARTS -->
+    <!-- LIVE TELEMETRY CHARTS -->
     <section class="charts-grid">
       <div class="chart-card">
         <div class="card-header">
-          <span>Real-time CPU Utilization & Memory</span>
-          <span style="font-size:0.75rem; color:var(--text-muted)">Sampling: 1 Hz</span>
-        </div>
-        <div class="chart-container">
-          <canvas id="chart-cpu-mem"></canvas>
-        </div>
-      </div>
-
-      <div class="chart-card">
-        <div class="card-header">
-          <span>Throughput (Tasks/sec) & Queue Length</span>
-          <span style="font-size:0.75rem; color:var(--text-muted)">Live Dispatch Rate</span>
+          <span>Banking TPS Throughput &amp; Settlement Backlog</span>
+          <span style="font-size:0.75rem; color:var(--text-muted)">Sampling Rate: 1 Hz</span>
         </div>
         <div class="chart-container">
           <canvas id="chart-throughput-queue"></canvas>
         </div>
       </div>
+
+      <div class="chart-card">
+        <div class="card-header">
+          <span>Core Ledger Server CPU &amp; Memory Utilization</span>
+          <span style="font-size:0.75rem; color:var(--text-muted)">Hardware Telemetry via psutil</span>
+        </div>
+        <div class="chart-container">
+          <canvas id="chart-cpu-mem"></canvas>
+        </div>
+      </div>
     </section>
 
-    <!-- WORKERS & CONCURRENCY CONTROLS -->
+    <!-- TELLER THREAD POOL & SWIFT SETTLEMENT PIPELINE -->
     <section class="split-grid">
-      <!-- Worker Thread Pool Panel -->
+      <!-- Active Teller Threads Panel -->
       <div class="panel-card">
         <div class="card-header">
-          <span>Active Worker Thread Pool</span>
+          <span>Active Banking Teller Threads (Worker Pool)</span>
           <div style="display:flex; gap:0.5rem; align-items:center;">
             <label style="font-size:0.75rem; color:var(--text-secondary); display:flex; align-items:center; gap:0.3rem;">
-              <input type="checkbox" id="check-dynamic" checked> Dynamic Autoscaling
+              <input type="checkbox" id="check-dynamic" checked> Auto-Scale Tellers
             </label>
             <input type="number" id="input-workers" min="1" max="16" value="4" style="width:55px; padding:0.25rem 0.4rem;">
             <button id="btn-set-workers" style="padding:0.25rem 0.6rem; font-size:0.75rem;">Set</button>
           </div>
         </div>
+        
         <div class="workers-container" id="workers-list">
-          <!-- Dynamically populated worker cards -->
+          <!-- Dynamically populated teller cards -->
         </div>
 
         <div style="margin-top:1.25rem;">
           <div class="card-header" style="margin-bottom:0.25rem;">
-            <span>Worker Execution Timeline (Gantt Schedule)</span>
-            <span style="font-size:0.72rem; color:var(--text-muted)">Recent thread execution windows</span>
+            <span>Teller Execution Timeline (Gantt Schedule)</span>
+            <span style="font-size:0.72rem; color:var(--text-muted)">Concurrent thread execution windows</span>
           </div>
           <div class="gantt-chart" id="gantt-container">
             <!-- Dynamically populated Gantt bars -->
@@ -187,37 +243,37 @@
         </div>
       </div>
 
-      <!-- Semaphore-Guarded Resource Pool -->
+      <!-- SWIFT Settlement Gateway (Counting Semaphore) -->
       <div class="panel-card">
         <div class="card-header">
-          <span>Shared Resource Pool (Semaphore)</span>
-          <span class="badge badge-busy">Capacity: 3</span>
+          <span>SWIFT Interbank Settlement Gateway</span>
+          <span class="tag-swift">Semaphore: Cap 3</span>
         </div>
         <p style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:1rem;">
-          Guarded by a Counting Semaphore. Demonstrates bounded concurrent access to finite database connections.
+          Guarded by a Counting Semaphore. International wire transfers require 1 of 3 encrypted settlement pipelines. Additional wires are BLOCKED until channels are released.
         </p>
 
-        <div style="background:rgba(0,0,0,0.25); border-radius:8px; padding:1rem; border:1px solid var(--border-color); display:flex; flex-direction:column; gap:0.75rem;">
+        <div style="background:rgba(0,0,0,0.3); border-radius:8px; padding:1rem; border:1px solid var(--border-color); display:flex; flex-direction:column; gap:0.75rem;">
           <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
-            <span>Available Permits:</span>
+            <span>Available Settlement Lines:</span>
             <strong id="sem-available" style="color:var(--accent-emerald);">3 / 3</strong>
           </div>
           <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
-            <span>Allocated Slots:</span>
+            <span>Active Wires In-Flight:</span>
             <strong id="sem-allocated" style="color:var(--accent-indigo);">0</strong>
           </div>
           <div style="display:flex; justify-content:space-between; font-size:0.8rem;">
-            <span>Blocked / Waiting Threads:</span>
+            <span>Waiting / Blocked Transfers:</span>
             <strong id="sem-waiting" style="color:var(--accent-amber);">0</strong>
           </div>
           <div id="sem-allocations-list" style="margin-top:0.5rem; font-size:0.72rem; color:var(--text-muted); display:flex; flex-direction:column; gap:0.25rem;">
-            <!-- Active resource slot holders -->
+            <!-- Active channels -->
           </div>
         </div>
 
         <div style="margin-top:1.25rem;">
           <div class="card-header">
-            <span>Live Kernel Event Log</span>
+            <span>Audit Trail &amp; Kernel Event Log</span>
           </div>
           <div class="event-log-container" id="event-log">
             <!-- Event entries -->
@@ -226,37 +282,22 @@
       </div>
     </section>
 
-    <!-- BANKING CORE LIVE ACCOUNT LEDGER -->
-    <section class="panel-card" style="border: 1px solid rgba(16, 185, 129, 0.3);">
-      <div class="card-header">
-        <div>
-          <span style="color:var(--accent-emerald); font-weight:700;">🏦 Core Banking System: Live Multi-Account Ledger</span>
-          <span style="font-size:0.75rem; color:var(--text-muted); margin-left:0.5rem;">Protected by Account-Level Mutexes &amp; Global ID Lock Ordering</span>
-        </div>
-        <button id="btn-reset-ledger" class="btn-warning" style="padding:0.25rem 0.6rem; font-size:0.75rem;">Reset Balances</button>
-      </div>
-
-      <div class="metrics-grid" id="banking-accounts-grid" style="margin-top:0.75rem;">
-        <!-- Live accounts populated dynamically -->
-      </div>
-    </section>
-
-    <!-- LIVE TASK TABLE -->
+    <!-- LIVE TRANSACTION SETTLEMENT TABLE -->
     <section class="table-card">
       <div class="card-header">
-        <span>Task Execution Table</span>
-        <button id="btn-refresh-tasks" style="padding:0.25rem 0.6rem; font-size:0.75rem;">Refresh Table</button>
+        <span>Real-Time Financial Transaction Ledger</span>
+        <button id="btn-refresh-tasks" style="padding:0.25rem 0.6rem; font-size:0.75rem;">Refresh Ledger</button>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Task ID</th>
-            <th>Name</th>
+            <th>Tx Reference</th>
+            <th>Operation / Transaction</th>
             <th>Type</th>
-            <th>Priority</th>
+            <th>Tier</th>
             <th>State</th>
-            <th>Worker</th>
-            <th>Wait Time</th>
+            <th>Assigned Teller</th>
+            <th>Queue Wait</th>
             <th>Exec Time</th>
             <th>Turnaround</th>
             <th>Action</th>
