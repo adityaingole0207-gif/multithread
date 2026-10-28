@@ -226,8 +226,11 @@ function updateDashboard(data) {
   // Event Log
   renderEvents(data.events || []);
 
-  // Gantt Chart
-  renderGantt(data.gantt || []);
+  // Gantt Chart (Swimlanes Timeline)
+  renderGantt(data.gantt || [], data.workers || []);
+
+  // Live OS Process Execution Pipeline & Concurrency Narrator
+  updatePipelineAndNarrator(data);
 
   // Banking Accounts Ledger & Vault Reserve
   if (data.banking_accounts) {
@@ -313,10 +316,107 @@ function renderEvents(events) {
   `).join('');
 }
 
-function renderGantt(ganttEntries) {
-  const container = document.getElementById('gantt-container');
+// ---------------- GANTT SCHEDULING TIMELINE & PROCESS PIPELINE ----------------
+function getTaskColor(name) {
+  const n = (name || '').toUpperCase();
+  if (n.includes('TRANSFER')) return '#10b981'; // emerald
+  if (n.includes('ATM')) return '#f59e0b'; // amber
+  if (n.includes('SWIFT') || n.includes('WIRE')) return '#6366f1'; // indigo
+  if (n.includes('FRAUD')) return '#a855f7'; // purple
+  if (n.includes('PAYROLL')) return '#06b6d4'; // cyan
+  return '#64748b'; // slate
+}
+
+function updatePipelineAndNarrator(data) {
+  const qLen = data.queue_length || 0;
+  const busy = data.active_workers || 0;
+  const total = data.total_workers || 4;
+  const completed = data.completed_count || 0;
+  const swiftAlloc = (data.swift_pool && data.swift_pool.allocated_count) || 0;
+  const swiftWait = (data.swift_pool && data.swift_pool.waiting_threads) || 0;
+
+  // 1. Update pipeline badge counts
+  safeSetText('pipe-count-new', `${qLen > 0 ? 1 : 0} NEW`);
+  safeSetText('pipe-count-ready', `${qLen} READY`);
+  safeSetText('pipe-count-running', `${busy} RUNNING`);
+  safeSetText('pipe-count-blocked', `${swiftAlloc + swiftWait} CRITICAL`);
+  safeSetText('pipe-count-completed', `${completed} SETTLED`);
+
+  // 2. Dynamic step active highlights
+  const step2 = document.getElementById('pipe-step-2');
+  const step3 = document.getElementById('pipe-step-3');
+  const step4 = document.getElementById('pipe-step-4');
+  const step5 = document.getElementById('pipe-step-5');
+
+  if (step2) step2.classList.toggle('active', qLen > 0);
+  if (step3) step3.classList.toggle('active', busy > 0);
+  if (step4) step4.classList.toggle('active', (swiftAlloc > 0 || busy > 0));
+  if (step5) step5.classList.toggle('active', completed > 0 && busy === 0);
+
+  // 3. Formulate plain-English live OS narrative
+  const narratorEl = document.getElementById('os-live-narrator');
+  const statusTag = document.getElementById('pipeline-status-tag');
+  if (!narratorEl) return;
+
+  if (busy > 0) {
+    narratorEl.innerHTML = `<strong>⚡ Active Concurrency:</strong> ${busy} of ${total} Teller OS threads executing tasks concurrently. Condition Variable signaled workers. Account Mutex locks active with Banker's ID Ordering (Deadlock-Free). SWIFT pipeline: ${swiftAlloc}/3 channels.`;
+    if (statusTag) {
+      statusTag.textContent = `⚡ ${busy} Tellers Busy`;
+      statusTag.style.background = 'rgba(99,102,241,0.2)';
+      statusTag.style.color = 'var(--accent-indigo)';
+    }
+  } else if (qLen > 0) {
+    narratorEl.innerHTML = `<strong>⏳ Backlog in Ready Queue:</strong> ${qLen} transaction(s) queued under <strong>${data.policy}</strong> scheduling policy. Priority aging incrementing wait credits to prevent starvation.`;
+    if (statusTag) {
+      statusTag.textContent = `⏳ ${qLen} Queued`;
+      statusTag.style.background = 'rgba(245,158,11,0.2)';
+      statusTag.style.color = 'var(--accent-amber)';
+    }
+  } else if (completed > 0) {
+    narratorEl.innerHTML = `<strong>✓ Atomic Ledger Settled:</strong> All ${completed} transactions executed successfully with Mutex-guarded atomic debit/credit. Zero race conditions, zero deadlocks. All ${total} tellers idle on ready queue condition wait.`;
+    if (statusTag) {
+      statusTag.textContent = `✓ ${completed} Settled`;
+      statusTag.style.background = 'rgba(16,185,129,0.2)';
+      statusTag.style.color = 'var(--accent-emerald)';
+    }
+  } else {
+    narratorEl.innerHTML = `System idle and ready. 4 native OS Teller Threads listening on Ready Queue Condition Variable. Master ledger accounts secured via Mutexes. Click <strong>Dispatch to Tellers</strong> below to observe real thread execution.`;
+    if (statusTag) {
+      statusTag.textContent = `All Locks Free`;
+      statusTag.style.background = 'rgba(16,185,129,0.15)';
+      statusTag.style.color = 'var(--accent-emerald)';
+    }
+  }
+}
+
+function renderGantt(ganttEntries, workers = []) {
+  const previewContainer = document.getElementById('gantt-container');
+  const swimlanesContainer = document.getElementById('gantt-swimlanes-container');
+  const timeAxis = document.getElementById('gantt-time-axis');
+
   if (!ganttEntries || ganttEntries.length === 0) {
-    container.innerHTML = '<span style="color:var(--text-muted); font-size:0.75rem;">Timeline empty. Submit tasks to view worker execution windows.</span>';
+    if (previewContainer) {
+      previewContainer.innerHTML = '<span style="color:var(--text-muted); font-size:0.75rem;">Timeline empty. Submit tasks to view worker execution windows.</span>';
+    }
+    if (swimlanesContainer) {
+      const defaultWorkers = workers.length > 0 ? workers : [
+        { name: 'Worker-1', is_busy: false },
+        { name: 'Worker-2', is_busy: false },
+        { name: 'Worker-3', is_busy: false },
+        { name: 'Worker-4', is_busy: false }
+      ];
+      swimlanesContainer.innerHTML = defaultWorkers.map(w => `
+        <div class="gantt-swimlane">
+          <div class="gantt-swimlane-header">
+            <span class="gantt-worker-name">${w.name.replace('Worker', 'Teller')}</span>
+            <span class="gantt-worker-state" style="color:var(--accent-emerald);">IDLE (WAITING)</span>
+          </div>
+          <div class="gantt-swimlane-track" style="display:flex; align-items:center; justify-content:center;">
+            <span style="font-size:0.68rem; color:var(--text-muted); font-style:italic;">Ready for CPU task dispatch...</span>
+          </div>
+        </div>
+      `).join('');
+    }
     return;
   }
 
@@ -325,21 +425,78 @@ function renderGantt(ganttEntries) {
   const maxTime = Math.max(...ganttEntries.map(e => e.end));
   const span = Math.max(0.1, maxTime - minTime);
 
-  container.innerHTML = ganttEntries.slice(-15).map(e => {
-    const leftPct = Math.max(0, Math.min(95, ((e.start - minTime) / span) * 100));
-    const widthPct = Math.max(4, Math.min(100 - leftPct, (e.duration / span) * 100));
-
-    return `
-      <div class="gantt-row">
-        <span class="gantt-label">${e.worker}</span>
-        <div class="gantt-track">
-          <div class="gantt-bar" style="left: ${leftPct}%; width: ${widthPct}%;" title="${e.name} (${e.duration}s)">
-            ${e.name} (${e.duration}s)
+  // 1. Mini preview in split-grid
+  if (previewContainer) {
+    previewContainer.innerHTML = ganttEntries.slice(-15).map(e => {
+      const leftPct = Math.max(0, Math.min(95, ((e.start - minTime) / span) * 100));
+      const widthPct = Math.max(4, Math.min(100 - leftPct, (e.duration / span) * 100));
+      const color = getTaskColor(e.name);
+      return `
+        <div class="gantt-row">
+          <span class="gantt-label">${e.worker.replace('Worker', 'Teller')}</span>
+          <div class="gantt-track">
+            <div class="gantt-bar" style="left: ${leftPct}%; width: ${widthPct}%; background:${color};" title="${e.name} (${e.duration}s)">
+              ${e.name} (${e.duration}s)
+            </div>
           </div>
         </div>
-      </div>
+      `;
+    }).join('');
+  }
+
+  // 2. Dedicated full-width swimlanes container
+  if (swimlanesContainer) {
+    const workerNames = Array.from(new Set([
+      ...(workers.map(w => w.name)),
+      ...(ganttEntries.map(e => e.worker)),
+      'Worker-1', 'Worker-2', 'Worker-3', 'Worker-4'
+    ])).filter(Boolean);
+
+    swimlanesContainer.innerHTML = workerNames.map(wName => {
+      const wTasks = ganttEntries.filter(e => e.worker === wName);
+      const isBusy = workers.some(w => w.name === wName && w.is_busy);
+      const stateBadge = isBusy 
+        ? '<span class="gantt-worker-state" style="color:var(--accent-indigo);">● EXECUTING</span>' 
+        : '<span class="gantt-worker-state" style="color:var(--accent-emerald);">○ IDLE</span>';
+
+      const blocksHtml = wTasks.map(e => {
+        const leftPct = Math.max(0, Math.min(96, ((e.start - minTime) / span) * 100));
+        const widthPct = Math.max(3, Math.min(100 - leftPct, (e.duration / span) * 100));
+        const color = getTaskColor(e.name);
+        return `
+          <div class="gantt-task-block" 
+               style="left:${leftPct}%; width:${widthPct}%; background:${color};" 
+               title="Transaction: ${e.name}&#10;Worker: ${e.worker}&#10;Execution Time: ${e.duration}s&#10;State: ${e.state}">
+            ${e.name} (${e.duration}s)
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="gantt-swimlane">
+          <div class="gantt-swimlane-header">
+            <span class="gantt-worker-name">${wName.replace('Worker', 'Teller')}</span>
+            ${stateBadge}
+          </div>
+          <div class="gantt-swimlane-track">
+            ${blocksHtml || '<span style="position:absolute; top:7px; left:12px; font-size:0.68rem; color:var(--text-muted); font-style:italic;">No tasks executed in this window</span>'}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // 3. Dynamic time axis scale
+  if (timeAxis) {
+    timeAxis.innerHTML = `
+      <span>T+0.00s</span>
+      <span>T+${(span * 0.2).toFixed(2)}s</span>
+      <span>T+${(span * 0.4).toFixed(2)}s</span>
+      <span>T+${(span * 0.6).toFixed(2)}s</span>
+      <span>T+${(span * 0.8).toFixed(2)}s</span>
+      <span>T+${span.toFixed(2)}s (Span: ${span.toFixed(2)}s)</span>
     `;
-  }).join('');
+  }
 }
 
 // ---------------- TASK TABLE ----------------

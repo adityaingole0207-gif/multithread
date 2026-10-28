@@ -129,6 +129,68 @@
       </div>
     </section>
 
+    <!-- LIVE OS PROCESS & THREAD NARRATOR (WHAT IS HAPPENING RIGHT NOW) -->
+    <div class="narrator-card">
+      <div class="narrator-icon">⚡</div>
+      <div style="flex:1;">
+        <div class="narrator-title">Real-Time OS Concurrency Narrator</div>
+        <div class="narrator-text" id="os-live-narrator">
+          System idle and ready. 4 native OS Teller Threads listening on Ready Queue Condition Variable. Master ledger accounts secured via Mutexes.
+        </div>
+      </div>
+      <div style="display:flex; gap:0.5rem;">
+        <span class="tag-swift" id="pipeline-status-tag" style="background:rgba(16,185,129,0.15); color:var(--accent-emerald); border-color:rgba(16,185,129,0.3);">All Locks Free</span>
+      </div>
+    </div>
+
+    <!-- 5-STEP OS PROCESS & THREAD EXECUTION PIPELINE (HOW IT WORKS) -->
+    <section class="pipeline-container">
+      <div class="pipeline-step" id="pipe-step-1">
+        <div class="pipeline-step-header">
+          <span class="pipeline-num">Stage 1: Admission</span>
+          <span class="pipeline-badge" style="color:var(--accent-cyan);" id="pipe-count-new">0 NEW</span>
+        </div>
+        <div class="pipeline-title">Producer Enqueue</div>
+        <div class="pipeline-desc">Client generates transaction PCB and submits into the ThreadPool.</div>
+      </div>
+
+      <div class="pipeline-step" id="pipe-step-2">
+        <div class="pipeline-step-header">
+          <span class="pipeline-num">Stage 2: Scheduling</span>
+          <span class="pipeline-badge" style="color:var(--accent-amber);" id="pipe-count-ready">0 READY</span>
+        </div>
+        <div class="pipeline-title">Ready Queue</div>
+        <div class="pipeline-desc">Thread-safe queue with dynamic aging to prevent process starvation.</div>
+      </div>
+
+      <div class="pipeline-step" id="pipe-step-3">
+        <div class="pipeline-step-header">
+          <span class="pipeline-num">Stage 3: Dispatch</span>
+          <span class="pipeline-badge" style="color:var(--accent-indigo);" id="pipe-count-running">0 RUNNING</span>
+        </div>
+        <div class="pipeline-title">OS Teller Thread</div>
+        <div class="pipeline-desc">Condition variable wakes available worker thread for context switch.</div>
+      </div>
+
+      <div class="pipeline-step" id="pipe-step-4">
+        <div class="pipeline-step-header">
+          <span class="pipeline-num">Stage 4: Sync</span>
+          <span class="pipeline-badge" style="color:var(--accent-purple);" id="pipe-count-blocked">0 BLOCKED</span>
+        </div>
+        <div class="pipeline-title">Critical Section</div>
+        <div class="pipeline-desc">Locks ordered by ID (deadlock avoidance) or SWIFT Semaphore permit.</div>
+      </div>
+
+      <div class="pipeline-step" id="pipe-step-5">
+        <div class="pipeline-step-header">
+          <span class="pipeline-num">Stage 5: Commit</span>
+          <span class="pipeline-badge" style="color:var(--accent-emerald);" id="pipe-count-completed">0 SETTLED</span>
+        </div>
+        <div class="pipeline-title">Atomic Settlement</div>
+        <div class="pipeline-desc">Debit/Credit updated in memory, locks released, task marked Completed.</div>
+      </div>
+    </section>
+
     <!-- BANKING DISPATCH CONTROLS -->
     <section class="controls-card" style="border: 1px solid var(--border-highlight);">
       <div class="control-group">
@@ -282,6 +344,65 @@
       </div>
     </section>
 
+    <!-- DEDICATED FULL-WIDTH MULTITHREADED EXECUTION GANTT CHART -->
+    <section class="gantt-panel">
+      <div class="card-header">
+        <div>
+          <span style="font-size:1.05rem; font-weight:800; color:var(--accent-cyan);">📊 Multithreaded Execution Gantt Chart (CPU Scheduling Timeline)</span>
+          <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.2rem;">
+            Real-time visualization of concurrent thread execution windows, burst durations, and CPU time-slicing across Tellers.
+          </div>
+        </div>
+        <div style="display:flex; gap:0.5rem; align-items:center;">
+          <span style="font-size:0.72rem; color:var(--text-secondary);">Window: Last 25 Completed Tasks</span>
+        </div>
+      </div>
+
+      <!-- Gantt Legend -->
+      <div class="gantt-legend">
+        <div class="gantt-legend-item">
+          <div class="gantt-color-dot" style="background:#10b981;"></div>
+          <span>P2P Safe Transfer (Lock Ordering)</span>
+        </div>
+        <div class="gantt-legend-item">
+          <div class="gantt-color-dot" style="background:#f59e0b;"></div>
+          <span>ATM Cash Withdrawal (Mutex)</span>
+        </div>
+        <div class="gantt-legend-item">
+          <div class="gantt-color-dot" style="background:#6366f1;"></div>
+          <span>SWIFT Wire (Semaphore Pipeline)</span>
+        </div>
+        <div class="gantt-legend-item">
+          <div class="gantt-color-dot" style="background:#a855f7;"></div>
+          <span>Fraud Risk AI (CPU Core Intensive)</span>
+        </div>
+        <div class="gantt-legend-item">
+          <div class="gantt-color-dot" style="background:#06b6d4;"></div>
+          <span>Corporate Payroll (Round-Robin Slice)</span>
+        </div>
+        <div class="gantt-legend-item">
+          <div class="gantt-color-dot" style="background:#64748b;"></div>
+          <span>Synthetic OS Benchmark</span>
+        </div>
+      </div>
+
+      <!-- Swimlanes Container -->
+      <div class="gantt-swimlanes" id="gantt-swimlanes-container">
+        <!-- Dynamically rendered swimlane per worker thread -->
+      </div>
+
+      <!-- Time Axis Scale -->
+      <div class="gantt-time-axis" id="gantt-time-axis">
+        <span>0.00s</span>
+        <span>0.25s</span>
+        <span>0.50s</span>
+        <span>0.75s</span>
+        <span>1.00s</span>
+        <span>1.25s</span>
+        <span>1.50s+</span>
+      </div>
+    </section>
+
     <!-- LIVE TRANSACTION SETTLEMENT TABLE -->
     <section class="table-card">
       <div class="card-header">
@@ -310,6 +431,6 @@
     </section>
   </main>
 
-  <script src="/static/js/app.js?v=3.0"></script>
+  <script src="/static/js/app.js?v=3.5"></script>
 </body>
 </html>
