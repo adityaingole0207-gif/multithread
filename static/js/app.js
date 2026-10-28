@@ -207,6 +207,31 @@ function updateDashboard(data) {
 
   // Gantt Chart
   renderGantt(data.gantt || []);
+
+  // Banking Accounts Ledger
+  if (data.banking_accounts) {
+    renderBankingAccounts(data.banking_accounts);
+  }
+}
+
+function renderBankingAccounts(accounts) {
+  const container = document.getElementById('banking-accounts-grid');
+  if (!container) return;
+  container.innerHTML = accounts.map(acc => `
+    <div class="metric-card" style="padding:0.85rem; border-color:rgba(16,185,129,0.25);">
+      <div class="metric-title">
+        <span style="color:var(--accent-emerald); font-weight:700;">${acc.account_id}</span>
+        <span style="font-size:0.7rem; color:var(--text-secondary);">${acc.holder_name}</span>
+      </div>
+      <div class="metric-value" style="font-size:1.3rem; color:var(--text-primary); margin:0.35rem 0;">
+        $${acc.balance.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+      </div>
+      <div class="metric-sub" style="display:flex; justify-content:space-between; font-size:0.7rem;">
+        <span>Tx Count: ${acc.transaction_count}</span>
+        <span style="color:var(--accent-cyan); font-weight:600;">Mutex Guarded</span>
+      </div>
+    </div>
+  `).join('');
 }
 
 function renderWorkers(workers) {
@@ -404,6 +429,14 @@ function setupEventListeners() {
 
   // Refresh tasks button
   document.getElementById('btn-refresh-tasks').addEventListener('click', refreshTasks);
+
+  // Reset Banking Ledger
+  const resetLedgerBtn = document.getElementById('btn-reset-ledger');
+  if (resetLedgerBtn) {
+    resetLedgerBtn.addEventListener('click', async () => {
+      await fetch('/api/banking/reset', { method: 'POST' });
+    });
+  }
 
   // Periodic task table update (every 2.5s)
   setInterval(refreshTasks, 2500);

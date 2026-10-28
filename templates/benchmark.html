@@ -198,6 +198,95 @@
       </div>
     </section>
 
+    <!-- SECTION 2.5: BANKING CONCURRENCY & CRITICAL SECTION DEMOS -->
+    <section class="split-grid" style="margin-top:1.25rem;">
+      <!-- Banking ATM Double-Spend Card -->
+      <div class="panel-card" style="border: 1px solid rgba(16, 185, 129, 0.3);">
+        <div class="card-header">
+          <span style="color:var(--accent-emerald); font-weight:700;">🏧 Banking Demo: ATM Double-Spend Race Condition</span>
+          <span class="badge badge-busy">Financial Mutex</span>
+        </div>
+        <p style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:1rem;">
+          Scenario: Alice has $5,000. 10 ATMs simultaneously try to withdraw $600 each ($6,000 total).
+          Without Mutex: Preemptive context switches cause double-spending and bank loss!
+        </p>
+
+        <div class="controls-card" style="background:rgba(0,0,0,0.25); margin-bottom:1rem; padding:0.75rem;">
+          <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.82rem; cursor:pointer;">
+            <input type="checkbox" id="check-banking-lock" checked>
+            <strong>Enable Account Mutex Lock (Atomic Balance Check)</strong>
+          </label>
+          <button class="btn-primary" id="btn-run-banking-race" style="padding:0.4rem 0.8rem; font-size:0.8rem;">Run ATM Double-Spend Test</button>
+        </div>
+
+        <div id="bank-race-results" style="background:rgba(18,24,38,0.8); border:1px solid var(--border-color); border-radius:8px; padding:1rem; display:flex; flex-direction:column; gap:0.5rem; font-size:0.82rem;">
+          <div style="display:flex; justify-content:space-between;">
+            <span>Ledger Mode:</span>
+            <strong id="bank-race-mode" style="color:var(--text-secondary);">Ready to execute</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span>Initial Balance vs Requested:</span>
+            <span>$5,000.00 / $6,000.00 (10 ATMs × $600)</span>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span>Approved Withdrawals:</span>
+            <strong id="bank-race-approved" style="color:var(--accent-emerald);">-</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span>Declined (Insufficient Funds):</span>
+            <strong id="bank-race-declined" style="color:var(--accent-amber);">-</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span>Total Cash Dispensed:</span>
+            <strong id="bank-race-dispensed">-</strong>
+          </div>
+          <div style="display:flex; justify-content:space-between;">
+            <span>Final Remaining Balance:</span>
+            <strong id="bank-race-final" style="color:var(--accent-cyan);">-</strong>
+          </div>
+          <p id="bank-race-explanation" style="font-size:0.75rem; color:var(--text-muted); margin-top:0.5rem; border-top:1px solid rgba(255,255,255,0.06); padding-top:0.5rem;">
+            Toggle the Mutex check above to observe whether the bank suffers cash overdraft losses.
+          </p>
+        </div>
+      </div>
+
+      <!-- Banking Cross-Transfer Deadlock Card -->
+      <div class="panel-card" style="border: 1px solid rgba(99, 102, 241, 0.3);">
+        <div class="card-header">
+          <span style="color:var(--accent-indigo); font-weight:700;">💳 Banking Demo: Cross-Account Transfer Deadlock</span>
+          <span class="badge badge-busy">Resource Hierarchy</span>
+        </div>
+        <p style="font-size:0.78rem; color:var(--text-secondary); margin-bottom:1rem;">
+          Tx 1: Alice transfers $500 to Bob (Lock Alice → Lock Bob).<br>
+          Tx 2: Bob transfers $300 to Alice (Lock Bob → Lock Alice).
+        </p>
+
+        <div class="controls-card" style="background:rgba(0,0,0,0.25); margin-bottom:1rem; padding:0.75rem;">
+          <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.82rem; cursor:pointer;">
+            <input type="checkbox" id="check-banking-avoid" checked>
+            <strong>Enforce Global Account ID Ordering (min(ID) first)</strong>
+          </label>
+          <button class="btn-primary" id="btn-run-banking-deadlock" style="padding:0.4rem 0.8rem; font-size:0.8rem;">Run Transfer Deadlock Test</button>
+        </div>
+
+        <div id="bank-deadlock-results" style="background:rgba(18,24,38,0.8); border:1px solid var(--border-color); border-radius:8px; padding:1rem; display:flex; flex-direction:column; gap:0.5rem; font-size:0.82rem;">
+          <div style="display:flex; justify-content:space-between;">
+            <span>Transfer Status:</span>
+            <strong id="bank-dl-status" style="color:var(--text-secondary);">Ready to execute</strong>
+          </div>
+          <div style="margin-top:0.5rem;">
+            <span style="font-size:0.75rem; color:var(--text-muted);">Banking Ledger Synchronization Trace:</span>
+            <div id="bank-dl-logs" style="margin-top:0.35rem; max-height:120px; overflow-y:auto; font-family:'Consolas', monospace; font-size:0.72rem; display:flex; flex-direction:column; gap:0.2rem; color:var(--text-secondary);">
+              <span>- Waiting to run interbank transfer -</span>
+            </div>
+          </div>
+          <p id="bank-dl-explanation" style="font-size:0.75rem; color:var(--text-muted); margin-top:0.5rem; border-top:1px solid rgba(255,255,255,0.06); padding-top:0.5rem;">
+            Shows how real banks prevent circular wait when customers transfer funds reciprocally.
+          </p>
+        </div>
+      </div>
+    </section>
+
     <!-- SECTION 3: THEORETICAL FOUNDATION -->
     <section class="panel-card" style="margin-bottom:2rem;">
       <div class="card-header">

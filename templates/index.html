@@ -73,16 +73,25 @@
       <div class="control-group">
         <span class="control-label">Workload Type</span>
         <select id="select-task-type">
-          <option value="cpu_matrix">CPU: Matrix Multiply (O(N^3))</option>
-          <option value="cpu_prime">CPU: Prime Calculation</option>
-          <option value="cpu_hash">CPU: SHA-256 Hashing</option>
-          <option value="io_network">I/O: Network Latency</option>
-          <option value="io_disk">I/O: Disk Seek Delay</option>
-          <option value="mixed_word">Mixed: Word Count Parser</option>
-          <option value="mixed_image">Mixed: 2D Convolution Blur</option>
-          <option value="round_robin_slice">Time-Sliced: Round Robin Quantum</option>
-          <option value="semaphore_db">Resource: Semaphore DB Query</option>
-          <option value="faulty">Faulty: Simulated Retry On Failure</option>
+          <optgroup label="🏦 Core Banking System (Real-World Application)">
+            <option value="bank_transfer" selected>🏦 Bank: P2P Fund Transfer (Deadlock-Free Lock Ordering)</option>
+            <option value="bank_atm">🏧 Bank: Concurrent ATM Withdrawal (Mutex Protection)</option>
+            <option value="bank_swift">🌐 Bank: SWIFT Settlement Line (Semaphore Pool: Cap 3)</option>
+            <option value="bank_fraud">🛡️ Bank: AI Transaction Risk Scoring (CPU Intensive)</option>
+            <option value="bank_payroll">💼 Bank: Corporate Payroll Disbursement (Round Robin)</option>
+          </optgroup>
+          <optgroup label="⚙️ Standard Synthetic OS Workloads">
+            <option value="cpu_matrix">CPU: Matrix Multiply (O(N^3))</option>
+            <option value="cpu_prime">CPU: Prime Calculation</option>
+            <option value="cpu_hash">CPU: SHA-256 Hashing</option>
+            <option value="io_network">I/O: Network Latency</option>
+            <option value="io_disk">I/O: Disk Seek Delay</option>
+            <option value="mixed_word">Mixed: Word Count Parser</option>
+            <option value="mixed_image">Mixed: 2D Convolution Blur</option>
+            <option value="round_robin_slice">Time-Sliced: Round Robin Quantum</option>
+            <option value="semaphore_db">Resource: Semaphore DB Query</option>
+            <option value="faulty">Faulty: Simulated Retry On Failure</option>
+          </optgroup>
         </select>
       </div>
 
@@ -214,6 +223,21 @@
             <!-- Event entries -->
           </div>
         </div>
+      </div>
+    </section>
+
+    <!-- BANKING CORE LIVE ACCOUNT LEDGER -->
+    <section class="panel-card" style="border: 1px solid rgba(16, 185, 129, 0.3);">
+      <div class="card-header">
+        <div>
+          <span style="color:var(--accent-emerald); font-weight:700;">🏦 Core Banking System: Live Multi-Account Ledger</span>
+          <span style="font-size:0.75rem; color:var(--text-muted); margin-left:0.5rem;">Protected by Account-Level Mutexes &amp; Global ID Lock Ordering</span>
+        </div>
+        <button id="btn-reset-ledger" class="btn-warning" style="padding:0.25rem 0.6rem; font-size:0.75rem;">Reset Balances</button>
+      </div>
+
+      <div class="metrics-grid" id="banking-accounts-grid" style="margin-top:0.75rem;">
+        <!-- Live accounts populated dynamically -->
       </div>
     </section>
 

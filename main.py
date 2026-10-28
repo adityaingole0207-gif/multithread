@@ -11,6 +11,7 @@ import argparse
 from app.routes import create_app
 from benchmarks.runner import BenchmarkSuite
 from benchmarks.sync_demos import run_race_condition_demo, run_deadlock_demo
+from tasks.banking_tasks import run_banking_double_spend_race, run_banking_cross_transfer_deadlock
 
 
 def print_banner():
@@ -87,6 +88,25 @@ def run_cli_mode():
         print(f"    {log}")
     print(f"    Status: Completed successfully = {avoid_res['success']}")
     print(f"\n    OS Concept: {avoid_res['explanation']}\n")
+
+    # 2.5 Real-World Banking Demos
+    print("-" * 80)
+    print("2.5. REAL-WORLD APPLICATION: CORE BANKING CONCURRENCY & SETTLEMENT ENGINE")
+    print("-" * 80)
+    print("Scenario A: Concurrent ATM Double-Spend Attack (Alice has $5,000; 10 ATMs withdraw $600)")
+    bank_race_bad = run_banking_double_spend_race(use_mutex=False)
+    print(f"    [Without Mutex]: Approved: {bank_race_bad['successful_withdrawals']} | Declined: {bank_race_bad['declined_withdrawals']} | Dispensed: ${bank_race_bad['total_cash_dispensed']} | Final: ${bank_race_bad['final_balance']}")
+    print(f"    Anomaly Alert: {'OVERDRAFT THEFT DETECTED!' if bank_race_bad['bank_loss_anomaly'] else 'Normal'}")
+
+    bank_race_good = run_banking_double_spend_race(use_mutex=True)
+    print(f"    [With Mutex]:    Approved: {bank_race_good['successful_withdrawals']} | Declined: {bank_race_good['declined_withdrawals']} | Dispensed: ${bank_race_good['total_cash_dispensed']} | Final: ${bank_race_good['final_balance']}")
+    print(f"    Result: Mutual Exclusion preserved. Legitimate transactions approved, remainder safely declined.\n")
+
+    print("Scenario B: Cross-Account Transfer Deadlock (Alice transfers to Bob while Bob transfers to Alice)")
+    bank_dl_bad = run_banking_cross_transfer_deadlock(avoid_deadlock=False)
+    print(f"    [Circular Wait]: Deadlock Detected = {bank_dl_bad['deadlocked']}")
+    bank_dl_good = run_banking_cross_transfer_deadlock(avoid_deadlock=True)
+    print(f"    [Account ID Order]: Settled Successfully = {bank_dl_good['success']}\n")
 
     # 3. Workload Benchmark - I/O Bound
     print("-" * 80)

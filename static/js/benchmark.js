@@ -150,6 +150,83 @@ function setupBenchmarkHandlers() {
       btn.textContent = 'Run Deadlock Test';
     }
   });
+
+  // Banking ATM Double-Spend Test
+  const bankRaceBtn = document.getElementById('btn-run-banking-race');
+  if (bankRaceBtn) {
+    bankRaceBtn.addEventListener('click', async () => {
+      const useMutex = document.getElementById('check-banking-lock').checked;
+      bankRaceBtn.disabled = true;
+      bankRaceBtn.textContent = 'Processing 10 ATMs...';
+
+      try {
+        const res = await fetch('/api/banking/sync/race', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ use_mutex: useMutex, concurrent_atms: 10, amount: 600.0 })
+        });
+        const data = await res.json();
+
+        document.getElementById('bank-race-mode').textContent = data.mode;
+        document.getElementById('bank-race-approved').textContent = `${data.successful_withdrawals} Approved ($${(data.successful_withdrawals * 600).toLocaleString()})`;
+        document.getElementById('bank-race-declined').textContent = `${data.declined_withdrawals} Declined`;
+        document.getElementById('bank-race-dispensed').textContent = `$${data.total_cash_dispensed.toLocaleString()}`;
+        
+        const finalEl = document.getElementById('bank-race-final');
+        finalEl.textContent = `$${data.final_balance.toLocaleString()}`;
+        if (data.bank_loss_anomaly) {
+          finalEl.style.color = 'var(--accent-rose)';
+          finalEl.textContent += ' (ANOMALY: OVERDRAFT LOSS!)';
+        } else {
+          finalEl.style.color = 'var(--accent-emerald)';
+        }
+
+        document.getElementById('bank-race-explanation').textContent = data.explanation;
+      } catch (e) {
+        console.error('Failed to run banking race test', e);
+      } finally {
+        bankRaceBtn.disabled = false;
+        bankRaceBtn.textContent = 'Run ATM Double-Spend Test';
+      }
+    });
+  }
+
+  // Banking Cross-Transfer Deadlock Test
+  const bankDlBtn = document.getElementById('btn-run-banking-deadlock');
+  if (bankDlBtn) {
+    bankDlBtn.addEventListener('click', async () => {
+      const avoid = document.getElementById('check-banking-avoid').checked;
+      bankDlBtn.disabled = true;
+      bankDlBtn.textContent = 'Executing Transfers...';
+
+      try {
+        const res = await fetch('/api/banking/sync/deadlock', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ avoid_deadlock: avoid })
+        });
+        const data = await res.json();
+
+        const statusEl = document.getElementById('bank-dl-status');
+        if (data.deadlocked) {
+          statusEl.textContent = 'DEADLOCK DETECTED (Alice & Bob transactions blocked on circular lock)';
+          statusEl.style.color = 'var(--accent-rose)';
+        } else {
+          statusEl.textContent = 'SUCCESS: Both transfers settled safely without deadlock!';
+          statusEl.style.color = 'var(--accent-emerald)';
+        }
+
+        const logsEl = document.getElementById('bank-dl-logs');
+        logsEl.innerHTML = (data.logs || []).map(l => `<span>${l}</span>`).join('');
+        document.getElementById('bank-dl-explanation').textContent = data.explanation;
+      } catch (e) {
+        console.error('Failed to run banking deadlock test', e);
+      } finally {
+        bankDlBtn.disabled = false;
+        bankDlBtn.textContent = 'Run Transfer Deadlock Test';
+      }
+    });
+  }
 }
 
 function renderBenchmarkResults(results) {
