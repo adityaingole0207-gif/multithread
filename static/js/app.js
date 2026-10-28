@@ -171,18 +171,25 @@ function initSSE() {
   }
 }
 
+function safeSetText(id, text) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = text;
+}
+
 // ---------------- DASHBOARD UI UPDATES ----------------
 function updateDashboard(data) {
-  // Top Metrics
-  document.getElementById('val-cpu').textContent = `${data.cpu_percent}%`;
-  document.getElementById('val-mem').textContent = `RAM: ${data.memory_mb} MB (${data.memory_percent}%)`;
-  document.getElementById('val-workers').textContent = `${data.active_workers} / ${data.total_workers}`;
-  document.getElementById('sub-workers').textContent = `${data.active_workers} busy | ${data.idle_workers} idle tellers`;
-  document.getElementById('val-queue').textContent = data.queue_length;
-  document.getElementById('sub-policy').textContent = `Dispatch: ${data.policy}`;
-  document.getElementById('val-throughput').textContent = `${data.tasks_per_second} TPS`;
-  document.getElementById('sub-completed').textContent = `Settled: ${data.completed_count} | Failed: ${data.failed_count}`;
-  document.getElementById('val-latency').textContent = `${data.avg_wait_time}s / ${data.avg_turnaround_time}s`;
+  if (!data) return;
+
+  // Top Metrics (guarded with safeSetText)
+  safeSetText('val-cpu', `${data.cpu_percent}%`);
+  safeSetText('val-mem', `RAM: ${data.memory_mb} MB (${data.memory_percent}%)`);
+  safeSetText('val-workers', `${data.active_workers} / ${data.total_workers}`);
+  safeSetText('sub-workers', `${data.active_workers} busy | ${data.idle_workers} idle tellers`);
+  safeSetText('val-queue', data.queue_length);
+  safeSetText('sub-policy', `Dispatch: ${data.policy}`);
+  safeSetText('val-throughput', `${data.tasks_per_second} TPS`);
+  safeSetText('sub-completed', `Settled: ${data.completed_count} | Failed: ${data.failed_count}`);
+  safeSetText('val-latency', `${data.avg_wait_time}s / ${data.avg_turnaround_time}s`);
 
   // Pause button state sync
   isEnginePaused = data.is_paused;
@@ -274,20 +281,14 @@ function renderWorkers(workers) {
     `;
   }).join('');
 }
-          <span class="badge ${badgeClass}">${statusText}</span>
-        </div>
-        <div class="worker-task-desc" title="${taskInfo}">${taskInfo}</div>
-      </div>
-    `;
-  }).join('');
-}
 
 function renderResourcePool(res) {
-  document.getElementById('sem-available').textContent = `${res.available_count} / ${res.capacity}`;
-  document.getElementById('sem-allocated').textContent = res.allocated_count;
-  document.getElementById('sem-waiting').textContent = res.waiting_threads;
+  safeSetText('sem-available', `${res.available_count} / ${res.capacity}`);
+  safeSetText('sem-allocated', res.allocated_count);
+  safeSetText('sem-waiting', res.waiting_threads);
 
   const listEl = document.getElementById('sem-allocations-list');
+  if (!listEl) return;
   const slots = Object.entries(res.allocations || {});
   if (slots.length === 0) {
     listEl.innerHTML = '<span>All database connection permits idle and available.</span>';
