@@ -6,94 +6,109 @@ let isEnginePaused = false;
 
 // ---------------- CHART INITIALIZATION ----------------
 function initCharts() {
-  const chartDefaults = {
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: { duration: 400 },
-    scales: {
-      x: {
-        grid: { color: 'rgba(255, 255, 255, 0.05)' },
-        ticks: { color: '#64748b', maxTicksLimit: 8, font: { size: 10 } }
-      },
-      y: {
-        grid: { color: 'rgba(255, 255, 255, 0.05)' },
-        ticks: { color: '#64748b', font: { size: 10 } }
-      }
-    },
-    plugins: {
-      legend: {
-        labels: { color: '#94a3b8', font: { size: 11 } }
-      }
-    }
-  };
+  if (typeof Chart === 'undefined') {
+    console.warn('Chart.js CDN is unavailable. Telemetry graphs disabled, core ledger active.');
+    return;
+  }
 
-  // 1. CPU & Memory Chart
-  const ctx1 = document.getElementById('chart-cpu-mem').getContext('2d');
-  chartCpuMem = new Chart(ctx1, {
-    type: 'line',
-    data: {
-      labels: [],
-      datasets: [
-        {
-          label: 'CPU Utilization (%)',
-          borderColor: '#06b6d4',
-          backgroundColor: 'rgba(6, 182, 212, 0.1)',
-          fill: true,
-          tension: 0.3,
-          data: [],
-          yAxisID: 'y'
-        },
-        {
-          label: 'Memory (MB)',
-          borderColor: '#6366f1',
-          backgroundColor: 'rgba(99, 102, 241, 0.1)',
-          fill: true,
-          tension: 0.3,
-          data: [],
-          yAxisID: 'y1'
-        }
-      ]
-    },
-    options: {
-      ...chartDefaults,
+  try {
+    const chartDefaults = {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: { duration: 400 },
       scales: {
-        ...chartDefaults.scales,
-        y1: {
-          position: 'right',
-          grid: { drawOnChartArea: false },
+        x: {
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
+          ticks: { color: '#64748b', maxTicksLimit: 8, font: { size: 10 } }
+        },
+        y: {
+          grid: { color: 'rgba(255, 255, 255, 0.05)' },
           ticks: { color: '#64748b', font: { size: 10 } }
         }
-      }
-    }
-  });
-
-  // 2. Throughput & Queue Length Chart
-  const ctx2 = document.getElementById('chart-throughput-queue').getContext('2d');
-  chartThroughputQueue = new Chart(ctx2, {
-    type: 'line',
-    data: {
-      labels: [],
-      datasets: [
-        {
-          label: 'Throughput (tasks/s)',
-          borderColor: '#10b981',
-          backgroundColor: 'rgba(16, 185, 129, 0.1)',
-          fill: true,
-          tension: 0.3,
-          data: []
-        },
-        {
-          label: 'Ready Queue Length',
-          borderColor: '#f59e0b',
-          backgroundColor: 'rgba(245, 158, 11, 0.1)',
-          fill: true,
-          tension: 0.3,
-          data: []
+      },
+      plugins: {
+        legend: {
+          labels: { color: '#94a3b8', font: { size: 11 } }
         }
-      ]
-    },
-    options: chartDefaults
-  });
+      }
+    };
+
+    // 1. CPU & Memory Chart
+    const canvas1 = document.getElementById('chart-cpu-mem');
+    if (canvas1) {
+      const ctx1 = canvas1.getContext('2d');
+      chartCpuMem = new Chart(ctx1, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'CPU Utilization (%)',
+              borderColor: '#06b6d4',
+              backgroundColor: 'rgba(6, 182, 212, 0.1)',
+              fill: true,
+              tension: 0.3,
+              data: [],
+              yAxisID: 'y'
+            },
+            {
+              label: 'Memory (MB)',
+              borderColor: '#6366f1',
+              backgroundColor: 'rgba(99, 102, 241, 0.1)',
+              fill: true,
+              tension: 0.3,
+              data: [],
+              yAxisID: 'y1'
+            }
+          ]
+        },
+        options: {
+          ...chartDefaults,
+          scales: {
+            ...chartDefaults.scales,
+            y1: {
+              position: 'right',
+              grid: { drawOnChartArea: false },
+              ticks: { color: '#64748b', font: { size: 10 } }
+            }
+          }
+        }
+      });
+    }
+
+    // 2. Throughput & Queue Length Chart
+    const canvas2 = document.getElementById('chart-throughput-queue');
+    if (canvas2) {
+      const ctx2 = canvas2.getContext('2d');
+      chartThroughputQueue = new Chart(ctx2, {
+        type: 'line',
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'Throughput (TPS)',
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              fill: true,
+              tension: 0.3,
+              data: []
+            },
+            {
+              label: 'Pending Settlement Backlog',
+              borderColor: '#f59e0b',
+              backgroundColor: 'rgba(245, 158, 11, 0.1)',
+              fill: true,
+              tension: 0.3,
+              data: []
+            }
+          ]
+        },
+        options: chartDefaults
+      });
+    }
+  } catch (err) {
+    console.error('Failed to initialize charts', err);
+  }
 }
 
 // ---------------- SERVER-SENT EVENTS & POLLING FALLBACK ----------------
@@ -378,74 +393,140 @@ async function cancelTask(taskId) {
   }
 }
 
+// ---------------- SNAPSHOT METRICS FETCHER ----------------
+async function fetchMetricsOnce() {
+  try {
+    const res = await fetch('/api/metrics');
+    if (res.ok) {
+      const data = await res.json();
+      updateDashboard(data);
+    }
+  } catch (err) {
+    console.warn('Initial metrics fetch deferred to stream', err);
+  }
+}
+
 // ---------------- EVENT LISTENERS ----------------
 function setupEventListeners() {
-  // Task Submission
-  document.getElementById('btn-submit').addEventListener('click', async () => {
-    const taskType = document.getElementById('select-task-type').value;
-    const count = parseInt(document.getElementById('select-batch-size').value, 10);
-    const priority = parseInt(document.getElementById('select-priority').value, 10);
+  // Task / Transaction Submission with Immediate Visual Feedback
+  const submitBtn = document.getElementById('btn-submit');
+  if (submitBtn) {
+    submitBtn.addEventListener('click', async () => {
+      const origHtml = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span>⚡ Dispatching...</span>';
 
-    await fetch('/api/tasks/submit', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ task_type: taskType, count, priority })
+      try {
+        const taskType = document.getElementById('select-task-type').value;
+        const count = parseInt(document.getElementById('select-batch-size').value, 10) || 1;
+        const priority = parseInt(document.getElementById('select-priority').value, 10) || 2;
+
+        const res = await fetch('/api/tasks/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task_type: taskType, count, priority })
+        });
+        const data = await res.json();
+
+        submitBtn.innerHTML = `<span>✓ Dispatched ${data.submitted_count} Tx!</span>`;
+        setTimeout(() => {
+          submitBtn.innerHTML = origHtml;
+          submitBtn.disabled = false;
+        }, 1200);
+
+        // Instantly refresh task table & account balances without waiting for SSE
+        refreshTasks();
+        fetchMetricsOnce();
+      } catch (err) {
+        console.error('Dispatch error:', err);
+        submitBtn.innerHTML = '<span>❌ Error</span>';
+        setTimeout(() => {
+          submitBtn.innerHTML = origHtml;
+          submitBtn.disabled = false;
+        }, 1500);
+      }
     });
-    refreshTasks();
-  });
+  }
 
-  // Pause / Resume
-  document.getElementById('btn-pause').addEventListener('click', async () => {
-    const endpoint = isEnginePaused ? '/api/control/resume' : '/api/control/pause';
-    await fetch(endpoint, { method: 'POST' });
-  });
+  // Freeze / Resume Engine
+  const pauseBtn = document.getElementById('btn-pause');
+  if (pauseBtn) {
+    pauseBtn.addEventListener('click', async () => {
+      const endpoint = isEnginePaused ? '/api/control/resume' : '/api/control/pause';
+      await fetch(endpoint, { method: 'POST' });
+      fetchMetricsOnce();
+    });
+  }
 
   // Reset Engine
-  document.getElementById('btn-reset').addEventListener('click', async () => {
-    if (confirm('Reset ThreadPool and clear all recorded tasks?')) {
-      await fetch('/api/control/reset', { method: 'POST' });
-      refreshTasks();
-    }
-  });
+  const resetBtn = document.getElementById('btn-reset');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', async () => {
+      if (confirm('Reset ThreadPool and clear all recorded tasks?')) {
+        await fetch('/api/control/reset', { method: 'POST' });
+        refreshTasks();
+        fetchMetricsOnce();
+      }
+    });
+  }
 
   // Policy Switcher
-  document.getElementById('select-policy').addEventListener('change', async (e) => {
-    const policy = e.target.value;
-    await fetch('/api/control/policy', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ policy })
+  const policySelect = document.getElementById('select-policy');
+  if (policySelect) {
+    policySelect.addEventListener('change', async (e) => {
+      const policy = e.target.value;
+      await fetch('/api/control/policy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ policy })
+      });
+      fetchMetricsOnce();
     });
-  });
+  }
 
   // Worker Count Manual Sizing
-  document.getElementById('btn-set-workers').addEventListener('click', async () => {
-    const count = parseInt(document.getElementById('input-workers').value, 10);
-    await fetch('/api/control/workers', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ count })
+  const setWorkersBtn = document.getElementById('btn-set-workers');
+  if (setWorkersBtn) {
+    setWorkersBtn.addEventListener('click', async () => {
+      const count = parseInt(document.getElementById('input-workers').value, 10);
+      await fetch('/api/control/workers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ count })
+      });
+      fetchMetricsOnce();
     });
-  });
+  }
 
   // Dynamic Scaling Toggle
-  document.getElementById('check-dynamic').addEventListener('change', async (e) => {
-    const enabled = e.target.checked;
-    await fetch('/api/control/workers', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ dynamic_scaling: enabled })
+  const dynamicCheck = document.getElementById('check-dynamic');
+  if (dynamicCheck) {
+    dynamicCheck.addEventListener('change', async (e) => {
+      const enabled = e.target.checked;
+      await fetch('/api/control/workers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dynamic_scaling: enabled })
+      });
+      fetchMetricsOnce();
     });
-  });
+  }
 
   // Refresh tasks button
-  document.getElementById('btn-refresh-tasks').addEventListener('click', refreshTasks);
+  const refreshTasksBtn = document.getElementById('btn-refresh-tasks');
+  if (refreshTasksBtn) {
+    refreshTasksBtn.addEventListener('click', () => {
+      refreshTasks();
+      fetchMetricsOnce();
+    });
+  }
 
   // Reset Banking Ledger
   const resetLedgerBtn = document.getElementById('btn-reset-ledger');
   if (resetLedgerBtn) {
     resetLedgerBtn.addEventListener('click', async () => {
       await fetch('/api/banking/reset', { method: 'POST' });
+      fetchMetricsOnce();
     });
   }
 
@@ -455,8 +536,18 @@ function setupEventListeners() {
 
 // ---------------- BOOTSTRAP ----------------
 window.addEventListener('DOMContentLoaded', () => {
-  initCharts();
-  initSSE();
+  // 1. Hook user interaction first so buttons always work
   setupEventListeners();
+
+  // 2. Load metrics & ledger immediately
+  fetchMetricsOnce();
+
+  // 3. Connect real-time streaming
+  initSSE();
+
+  // 4. Safely initialize charts
+  initCharts();
+
+  // 5. Populate task table
   refreshTasks();
 });
